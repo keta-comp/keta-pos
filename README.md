@@ -9,7 +9,9 @@ KetaPOS is a native Android and iOS point-of-sale app for shops, cafes, and rest
 - Select a shop or cafe/restaurant business mode.
 - Enter a business name and see the next setup step for that mode.
 
-The onboarding is a UI starter and keeps its state in memory. Authentication, backend storage, catalog, barcode scanning, sales, payments, offline sync, printers, and store submission are future implementation steps.
+The onboarding now opens a mode-specific local POS screen. Users can add products or dishes, adjust cart quantities, select a recorded payment method, confirm sales, and view sale line items in session history. Cafe mode accepts an optional table number.
+
+All data currently lives in memory and is lost when the app closes. Selecting Card records a payment method only; it does not charge a card. Authentication, durable storage, camera barcode scanning, backend sync, kitchen workflow, actual payment processing, printers, and store submission remain to be implemented. Native builds and device testing have not yet been performed.
 
 ## Run
 
