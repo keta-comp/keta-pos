@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { Component } from "react";
+import { useStoredState } from "./storage";
 import PosScreen from "./PosScreen";
 import {
   Pressable,
@@ -49,10 +50,22 @@ const BUSINESS = {
   mark: string;
 }>;
 
-export default function App() {
-  const [step, setStep] = useState<Step>("choose");
-  const [businessType, setBusinessType] = useState<BusinessType | null>(null);
-  const [businessName, setBusinessName] = useState("");
+export default class App extends Component<object, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (this.state.failed) return <SafeAreaView style={s.safe}><Text style={{ padding: 32 }}>Ma’lumotlarni ochib bo‘lmadi. Ilovani qayta oching. Saqlangan ma’lumotlar o‘chirilmagan.</Text></SafeAreaView>;
+    return <Setup />;
+  }
+}
+function Setup() {
+  const [profile, update] = useStoredState("ketapos.profile.v1", {
+    step: "choose" as Step, businessType: null as BusinessType | null, businessName: "",
+  });
+  const { step, businessType, businessName } = profile;
+  const setStep = (value: Step) => update(old => ({ ...old, step: value }));
+  const setBusinessType = (value: BusinessType | null) => update(old => ({ ...old, businessType: value }));
+  const setBusinessName = (value: string) => update(old => ({ ...old, businessName: value }));
 
   const business = businessType ? BUSINESS[businessType] : null;
   const canContinue = businessType !== null;
