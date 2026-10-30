@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "KetaPOS",
+    "slug": "ketapos",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "ketapos",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uz.ketaone.ketapos"
+    },
+    "android": {
+      "package": "uz.ketaone.ketapos",
+      "edgeToEdgeEnabled": true
+    }
+  }
+}
