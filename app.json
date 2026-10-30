@@ -13,6 +13,16 @@
     "android": {
       "package": "uz.ketaone.ketapos",
       "edgeToEdgeEnabled": true
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "KetaPOS mahsulot shtrix-kodini o‘qish uchun kameradan foydalanadi.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
+      ]
+    ]
   }
 }
