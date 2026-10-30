@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PosScreen from "./PosScreen";
 import {
   Pressable,
   SafeAreaView,
@@ -65,7 +66,7 @@ export default function App() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.background} />
+      <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
         <View style={s.page}>
           <View style={s.brandRow}>
@@ -180,24 +181,8 @@ export default function App() {
             </View>
           )}
 
-          {step === "complete" && business && (
-            <View style={s.content}>
-              <View style={s.successMark}><Text style={s.successCheck}>✓</Text></View>
-              <Eyebrow label="KETAPOS TAYYOR" />
-              <Text style={s.heading}>{businessName.trim()}</Text>
-              <Text style={s.description}>{business.name} uchun ish joyi tanlandi.</Text>
-
-              <View style={s.completeCard}>
-                <Text style={s.noteLabel}>KEYINGI QADAM</Text>
-                <Text style={s.completeTitle}>{business.next}</Text>
-                <Text style={s.completeText}>
-                  Bu boshlang‘ich mobil ilova karkasi. Kassa, mahsulotlar, menyu,
-                  to‘lovlar va saqlash qismlari keyingi bosqichlarda ulanadi.
-                </Text>
-              </View>
-
-              <PrimaryButton label="Boshidan ko‘rish" onPress={reset} />
-            </View>
+          {step === "complete" && businessType && (
+            <PosScreen businessName={businessName.trim()} mode={businessType} />
           )}
 
           <View style={s.footer}>
