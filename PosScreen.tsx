@@ -1,21 +1,28 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useStoredState } from "./storage";
+import BarcodeScanner from "./BarcodeScanner";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-type Product = { id: number; name: string; price: number };
+type Product = { id: number; name: string; price: number; barcode?: string };
 type Line = Product & { quantity: number };
 type Sale = { id: number; total: number; lines: Line[]; table: string; payment: string };
 const money = (value: number) => value.toLocaleString("uz-UZ") + " so‘m";
 
 export default function PosScreen({ businessName, mode }: { businessName: string; mode: "shop" | "cafe" }) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<Line[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
+  const [data, update] = useStoredState("ketapos.pos.v1", {
+    products: [] as Product[], cart: [] as Line[], sales: [] as Sale[],
+    table: "", payment: "Naqd", sequence: 1,
+  });
+  const { products, cart, sales, table, payment, sequence } = data;
+  const setCart = (fn: (rows: Line[]) => Line[]) => update(old => ({ ...old, cart: fn(old.cart) }));
+  const setTable = (value: string) => update(old => ({ ...old, table: value }));
+  const setPayment = (value: string) => update(old => ({ ...old, payment: value }));
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [table, setTable] = useState("");
-  const [payment, setPayment] = useState("Naqd");
+  const [barcode, setBarcode] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const confirming = useRef(false);
   const [tab, setTab] = useState<"cash" | "history">("cash");
-  const [sequence, setSequence] = useState(1);
   const total = cart.reduce((sum, row) => sum + row.price * row.quantity, 0);
 
   function addProduct() {
@@ -24,8 +31,13 @@ export default function PosScreen({ businessName, mode }: { businessName: string
       Alert.alert("Ma’lumotni tekshiring", "Nom va musbat butun so‘mdagi narxni kiriting.");
       return;
     }
-    setProducts(rows => [...rows, { id: sequence, name: name.trim(), price: value }]);
-    setSequence(n => n + 1);
+    if (barcode.trim() && products.some(row => row.barcode === barcode.trim())) {
+      Alert.alert("Shtrix-kod mavjud", "Bu kod boshqa mahsulotga biriktirilgan.");
+      return;
+    }
+    if (!update(old => ({ ...old, sequence: old.sequence + 1,
+      products: [...old.products, { id: old.sequence, name: name.trim(), price: value, barcode: barcode.trim() }] }))) return;
+    setBarcode("");
     setName("");
     setPrice("");
   }
@@ -40,22 +52,36 @@ export default function PosScreen({ businessName, mode }: { businessName: string
   }
 
   function checkout() {
-    if (!cart.length || !Number.isSafeInteger(total)) return;
+    if (confirming.current || !cart.length || !Number.isSafeInteger(total)) return;
+    confirming.current = true;
     Alert.alert("Savdoni yakunlash", money(total) + " · " + payment, [
-      { text: "Bekor qilish", style: "cancel" },
+      { text: "Bekor qilish", style: "cancel", onPress: () => { confirming.current = false; } },
       { text: "Tasdiqlash", onPress: () => {
-        setSales(rows => [{ id: sequence, lines: cart.map(row => ({ ...row })), total, table: table.trim(), payment }, ...rows]);
-        setSequence(n => n + 1);
-        setCart([]);
-        setTable("");
+        update(old => ({ ...old,
+          sales: [{ id: old.sequence, lines: old.cart.map(row => ({ ...row })),
+            total: old.cart.reduce((sum, row) => sum + row.price * row.quantity, 0),
+            table: old.table.trim(), payment: old.payment }, ...old.sales],
+          sequence: old.sequence + 1, cart: [], table: "",
+        }));
+        confirming.current = false;
       } },
-    ]);
+    ], { cancelable: false });
   }
 
   return <View style={s.container}>
+    {scanning && <BarcodeScanner onClose={() => setScanning(false)} onScan={code => {
+      setScanning(false);
+      const match = products.find(row => row.barcode === code);
+      if (match) changeQuantity(match, 1);
+      else {
+        setBarcode(code);
+        Alert.alert("Mahsulot topilmadi", "Kod mahsulot qo‘shish maydoniga kiritildi. Nom va narxni to‘ldiring.");
+      }
+    }} />}
     <Text style={s.caption}>{mode === "shop" ? "DO‘KON KASSASI" : "KAFE / RESTORAN KASSASI"}</Text>
     <Text style={s.title}>{businessName}</Text>
     <View style={s.tabs}>
+      <Action label="Skanerlash" onPress={() => setScanning(true)} />
       <Action label="Kassa" onPress={() => setTab("cash")} active={tab === "cash"} />
       <Action label={"Savdolar (" + sales.length + ")"} onPress={() => setTab("history")} active={tab === "history"} />
     </View>
@@ -71,6 +97,7 @@ export default function PosScreen({ businessName, mode }: { businessName: string
         <Text style={s.heading}>{mode === "shop" ? "Mahsulot qo‘shish" : "Taom qo‘shish"}</Text>
         <TextInput accessibilityLabel="Nomi" style={s.input} placeholder="Nomi" value={name} onChangeText={setName} />
         <TextInput accessibilityLabel="Narx, so‘m" style={s.input} placeholder="Narx, so‘m" keyboardType="number-pad" value={price} onChangeText={setPrice} />
+        <TextInput accessibilityLabel="Shtrix-kod" style={s.input} placeholder="Shtrix-kod (ixtiyoriy)" value={barcode} onChangeText={setBarcode} autoCapitalize="none" />
         <Action label="Qo‘shish" onPress={addProduct} active />
       </View>
       <Text style={s.heading}>{mode === "shop" ? "Mahsulotlar" : "Menyu"}</Text>
